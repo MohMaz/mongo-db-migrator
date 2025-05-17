@@ -1,25 +1,9 @@
-import json
+from datetime import datetime
 
-from java_migration_tool.analyzer import Analyzer, StaticAnalyzer
+from java_migration_tool.analyzer import StaticAnalyzer
 from java_migration_tool.llm_client import LLMClient
 from java_migration_tool.mongodb_migration import MongoDBMigration
 from java_migration_tool.report import generate_report
-
-
-def get_analyzer(analyzer_type: str, model: str | None = None) -> Analyzer:
-    """Get the appropriate analyzer based on type.
-
-    Args:
-        analyzer_type: Type of analyzer to use ('static' or 'code2prompt')
-        model: Optional model name for code2prompt analyzer
-
-    Returns:
-        An instance of the requested analyzer
-    """
-    if analyzer_type == "static":
-        return StaticAnalyzer()
-    else:
-        raise ValueError(f"Unknown analyzer type: {analyzer_type}")
 
 
 def main(repo_path: str) -> None:
@@ -29,32 +13,29 @@ def main(repo_path: str) -> None:
         repo_path: Path to the repository to analyze
     """
     # Initialize components
-    analyzer = StaticAnalyzer()
     llm_client = LLMClient()
-    migration = MongoDBMigration(llm_client)
+    analyzer = StaticAnalyzer()
+    migration = MongoDBMigration(llm_client, repo_path, analyzer)
 
-    # Analyze codebase
-    code_summary = analyzer.analyze_codebase(repo_path)
+    # Generate migration plan sections
+    migration.generate_current_overview()
+    migration.generate_migration_strategy()
+    # migration.generate_implementation_steps()
+    # migration.generate_additional_considerations()
 
-    # Save code summary
-    with open("code_base_summary.json", "w") as f:
-        json.dump(code_summary.to_json(), f, indent=2)
-
-    # Generate migration plan
-    migration_plan = migration.suggest_migration_plan(code_summary)
-
-    # Generate MongoDB schema
-    schema = migration.generate_mongodb_schema(code_summary)
+    # Get complete migration context
+    migration_context = migration.get_migration_context()
 
     # Generate report
     report = generate_report(
-        codebase_summary=code_summary,
-        migration_plan=migration_plan,
-        schema=schema,
+        codebase_summary=migration.code_summary,
+        migration_context=migration_context,
     )
 
-    # Save report
-    with open("migration_report.md", "w") as f:
+    # Save report with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_path = f"reports/migration_report_{timestamp}.md"
+    with open(report_path, "w+") as f:
         f.write(report)
 
 

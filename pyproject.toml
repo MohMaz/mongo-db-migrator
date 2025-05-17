@@ -41,7 +41,7 @@ lint-fix = "ruff check . --fix"
 typecheck = "pyright"
 check = { shell = "poe format && poe lint && poe typecheck" }
 check-fix = { shell = "poe format && poe lint-fix" }
-run = "python -m java_migration_tool.cli cloned_repos/spring-petclinic"
+run = "python -m java_migration_tool.cli"
 
 [tool.black]
 line-length = 100

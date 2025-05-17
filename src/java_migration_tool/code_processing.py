@@ -1,4 +1,5 @@
 import re
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 
 class CodeProcessing:
@@ -21,7 +22,7 @@ class CodeProcessing:
         return code
 
     @staticmethod
-    def extract_imports(code: str) -> list[str]:
+    def extract_imports(code: str) -> List[str]:
         """Extract import statements from Java code.
 
         Args:
@@ -60,7 +61,7 @@ class CodeProcessing:
         return match.group(1) if match else None
 
     @staticmethod
-    def extract_methods(code: str) -> list[dict]:
+    def extract_methods(code: str) -> List[Dict[str, Any]]:
         """Extract method declarations from Java code.
 
         Args:
@@ -100,7 +101,7 @@ class CodeProcessing:
         return []
 
     @staticmethod
-    def extract_entity_info(code: str, file_path: str) -> tuple[str, str, list[str]] | None:
+    def extract_entity_info(code: str, file_path: str) -> Optional[Tuple[str, str, List[str]]]:
         """Extract entity information from Java code.
 
         Args:
@@ -168,7 +169,9 @@ class CodeProcessing:
         return class_name, entity_type, methods
 
     @staticmethod
-    def extract_database_config(code: str, file_path: str) -> tuple[str, dict] | None:
+    def extract_database_config(
+        code: str, file_path: str
+    ) -> Optional[Tuple[Literal["mysql", "postgresql", "h2", "hikari"], Dict[str, Any]]]:
         """Extract database configuration from Java code.
 
         Args:
@@ -176,7 +179,7 @@ class CodeProcessing:
             file_path: Path to the Java file
 
         Returns:
-            Tuple of (db_type, properties) or None if no config found
+            Tuple of (database_type, config) or None if no config found
         """
         # Look for common database configuration patterns
         db_type = None

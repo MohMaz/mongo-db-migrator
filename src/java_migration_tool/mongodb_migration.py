@@ -1,25 +1,75 @@
 import json
-from typing import Any
+from typing import Any, Dict, List, TypedDict
 
 from openai.types.chat import ChatCompletionMessageParam
 
+from java_migration_tool.analyzer import StaticAnalyzer
 from java_migration_tool.code_processing import CodeProcessing
 from java_migration_tool.llm_client import LLMClient
-from java_migration_tool.models import CodebaseSummary
+
+
+class MethodInfo(TypedDict):
+    """Type definition for method information."""
+
+    name: str
+    annotations: List[str]
+    return_type: str | None
+
+
+class EntityData(TypedDict):
+    """Type definition for entity data."""
+
+    name: str
+    package: str
+    description: str
+    annotations: List[str]
+    methods: List[MethodInfo]
+    imports: List[str]
+    file: str
+
+
+class RelationshipInfo(TypedDict):
+    """Type definition for relationship information."""
+
+    type: str
+    from_entity: str
+    to_entity: str
+
+
+class CuratedContext(TypedDict):
+    """Type definition for curated context."""
+
+    entities: List[EntityData]
+    relationships: List[RelationshipInfo]
+    annotations: Dict[str, List[str]]
 
 
 class MongoDBMigration:
     """Class for handling MongoDB migration tasks using LLM."""
 
-    def __init__(self, llm_client: LLMClient):
+    def __init__(self, llm_client: LLMClient, repo_path: str, analyzer: StaticAnalyzer):
         """Initialize MongoDB migration handler.
 
         Args:
             llm_client: LLM client instance
+            repo_path: Path to the repository to analyze
         """
         self.llm_client = llm_client
+        self._migration_context = {
+            "overview": "",
+            "strategy": "",
+            "implementation_steps": "",
+            "additional_considerations": "",
+        }
 
-    def _curate_entity_context(self, code_summary: CodebaseSummary) -> dict[str, Any]:
+        # Initialize analyzer and build code summary
+        self.analyzer = analyzer
+        self.code_summary = self.analyzer.analyze_codebase(repo_path)
+
+        # Build curated context
+        self.curated_context = self._curate_codebas_as_context()
+
+    def _curate_codebas_as_context(self) -> CuratedContext:
         """Curate context from entity models for schema generation.
 
         Args:
@@ -28,14 +78,14 @@ class MongoDBMigration:
         Returns:
             Curated context focusing on entity models and their relationships
         """
-        curated_context = {
+        curated_context: CuratedContext = {
             "entities": [],
             "relationships": [],
             "annotations": {},
         }
 
         # Process each file that might contain entities
-        for file_info in code_summary.files:
+        for file_info in self.code_summary.files:
             try:
                 with open(file_info.file) as f:
                     code = f.read()
@@ -56,7 +106,7 @@ class MongoDBMigration:
                     methods = CodeProcessing.extract_methods(clean_code)
 
                     # Add entity to curated context
-                    entity_data = {
+                    entity_data: EntityData = {
                         "name": entity_name,
                         "package": package,
                         "description": description,
@@ -79,7 +129,7 @@ class MongoDBMigration:
 
         # Analyze relationships based on annotations and imports
         for entity in curated_context["entities"]:
-            relationships = []
+            relationships: List[RelationshipInfo] = []
             for annotation in entity["annotations"]:
                 if annotation in ["@OneToMany", "@ManyToOne", "@OneToOne", "@ManyToMany"]:
                     # Look for related entity in imports
@@ -92,8 +142,8 @@ class MongoDBMigration:
                                 relationships.append(
                                     {
                                         "type": annotation,
-                                        "from": entity["name"],
-                                        "to": other_entity["name"],
+                                        "from_entity": entity["name"],
+                                        "to_entity": other_entity["name"],
                                     }
                                 )
             if relationships:
@@ -101,46 +151,43 @@ class MongoDBMigration:
 
         return curated_context
 
-    def suggest_migration_plan(self, code_summary: CodebaseSummary) -> str:
-        """Generate a migration plan for converting Spring Boot to MongoDB.
-
-        Args:
-            code_summary: Summary of the codebase to migrate
+    def generate_current_overview(self) -> str:
+        """Generate current application overview section.
 
         Returns:
-            Migration plan as a string
+            Current application overview as a string
         """
+        # Get enhanced descriptions from LLM in a single call
         system_prompt = (
-            "You are a Java Spring to Spring Boot + MongoDB migration expert.\n"
-            "Given the codebase summary below, suggest a detailed migration plan.\n"
-            "Use code blocks with ``` for any code blocks in the codebase summary.\n"
-            "Include specific steps for:\n"
-            "1. Converting JPA entities to MongoDB documents\n"
-            "2. Updating Spring configurations\n"
-            "3. Modifying repository interfaces\n"
-            "4. Handling transactions and relationships\n"
+            "You are a Java Spring Boot application analyzer.\n"
+            "Given a structured overview of entities, repositories, and database configurations,\n"
+            "provide a detailed markdown-formatted overview of the application.\n\n"
+            "For each entity, provide a one-line description focusing on its business domain and relationships. Entity name should be in bold.\n"
+            "For each repository, provide a one-line description focusing on its data access patterns.\n"
+            "Keep descriptions concise and clear.\n\n"
+            "Format the output as a markdown document with the following structure:\n"
+            "1. Entity Models (grouped by package)\n"
+            "2. JPA Repositories (grouped by entity type)\n"
+            "3. Database Configuration\n"
         )
-        user_prompt = f"\nCodebase Summary:\n{json.dumps(code_summary.model_dump(), indent=2)}\n"
+
+        user_prompt = f"Application Structure:\n{json.dumps(self.curated_context, indent=2)}\n"
 
         messages: list[ChatCompletionMessageParam] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
 
-        return self.llm_client.generate_completion(messages)
+        overview = self.llm_client.generate_completion(messages)
+        self._migration_context["overview"] = overview
+        return overview
 
-    def generate_mongodb_schema(self, code_summary: CodebaseSummary) -> str:
+    def generate_mongodb_schema(self) -> str:
         """Generate MongoDB schema suggestions based on the codebase.
-
-        Args:
-            code_summary: Summary of the codebase to analyze
 
         Returns:
             MongoDB schema suggestions as a string
         """
-        # Curate context focusing on entity models
-        curated_context = self._curate_entity_context(code_summary)
-
         system_prompt = (
             "You are a Java and MongoDB schema design expert.\n"
             "Given the following JPA entity models and their relationships,\n"
@@ -150,16 +197,12 @@ class MongoDBMigration:
             "2. Indexing strategies based on query patterns\n"
             "3. Data validation and constraints\n"
             "4. Performance implications of your design choices\n"
-            "Use code blocks with ``` for any code blocks to make it easier to read.\n"
-            "Provide schema in JSON-like format with embedded/nested design if applicable.\n"
+            "Provide schema in JSON-like format with embedded/nested design if applicable. Provide one block of code for all of the schemas.\n"
+            "Provide a short bullet list on design decisions and why you made them.\n"
+            "Use markdown format for the generated output so it can be rendered well in the report.\n"
         )
         user_prompt = (
-            f"\nEntity Models and Relationships:\n{json.dumps(curated_context, indent=2)}\n"
-            "\nPlease provide:\n"
-            "1. MongoDB document schemas for each entity\n"
-            "2. Explanation of relationship handling\n"
-            "3. Recommended indexes\n"
-            "4. Any data validation rules\n"
+            f"\nEntity Models and Relationships:\n{json.dumps(self.curated_context, indent=2)}\n"
         )
 
         messages: list[ChatCompletionMessageParam] = [
@@ -167,4 +210,178 @@ class MongoDBMigration:
             {"role": "user", "content": user_prompt},
         ]
 
-        return self.llm_client.generate_completion(messages)
+        schema = self.llm_client.generate_completion(messages)
+        self._migration_context["schema"] = schema
+        return schema
+
+    def generate_file_updates(self, suggested_schema: str) -> str:
+        """Generate updated files based on the suggested MongoDB schema.
+
+        Args:
+            suggested_schema: MongoDB schema suggestions from generate_mongodb_schema
+
+        Returns:
+            Updated files as a string with code blocks for each file category
+        """
+        system_prompt = (
+            "You are a Java Spring to Spring Boot + MongoDB migration expert.\n"
+            "Given the existing codebase and the suggested MongoDB schema,\n"
+            "identify and generate updates for different categories of files.\n\n"
+            "First, analyze the codebase and identify these categories:\n"
+            "1. Entity Models (JPA entities to MongoDB documents)\n"
+            "2. Repository Interfaces (JPA repositories to MongoDB repositories)\n"
+            "3. Configuration Files (database, application properties)\n"
+            "4. Service Layer (if any service classes need updates)\n"
+            "5. Test Files (if any test classes need updates)\n\n"
+            "For each category that needs updates:\n"
+            "1. List the files that need to be modified\n"
+            "2. Provide the complete updated code for each file\n"
+            "3. Keep comments minimal and only include essential ones\n"
+            "4. Use Lombok @Data annotation instead of getters/setters\n"
+            "5. Include all necessary imports\n\n"
+            "Format the output as a markdown document with sections for each category.\n"
+            "Example format:\n"
+            "## Entity Models\n"
+            "```java\n"
+            "// User.java\n"
+            "package com.example.entity;\n"
+            "import lombok.Data;\n"
+            "import org.springframework.data.mongodb.core.mapping.Document;\n"
+            "@Data\n"
+            '@Document(collection = "users")\n'
+            "public class User {\n"
+            "    // ... fields and business logic ...\n"
+            "}\n"
+            "```\n\n"
+            "## Repository Interfaces\n"
+            "```java\n"
+            "// UserRepository.java\n"
+            "package com.example.repository;\n"
+            "import org.springframework.data.mongodb.repository.MongoRepository;\n"
+            "public interface UserRepository extends MongoRepository<User, String> {\n"
+            "    // ... custom methods ...\n"
+            "}\n"
+            "```\n"
+        )
+
+        user_prompt = (
+            f"\nExisting Codebase Structure:\n{json.dumps(self.curated_context, indent=2)}\n\n"
+            f"Suggested MongoDB Schema:\n{suggested_schema}\n"
+        )
+
+        messages: list[ChatCompletionMessageParam] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        files_to_change = self.llm_client.generate_completion(messages)
+        self._migration_context["files_to_change"] = files_to_change
+        return files_to_change
+
+    def generate_migration_strategy(self) -> str:
+        """Generate MongoDB migration strategy section.
+
+        Returns:
+            Migration strategy as a string
+        """
+        # First, generate schema design
+        schema = self.generate_mongodb_schema()
+
+        # Then, generate files to change
+        files_to_change = self.generate_file_updates(schema)
+
+        system_prompt = (
+            "You are a Java Spring to Spring Boot + MongoDB migration expert.\n"
+            "Given the current application overview, MongoDB schema, and updated files,\n"
+            "provide a short migration strategy.\n\n"
+            "Include:\n"
+            "1. Schema design decisions and rationale\n"
+            "2. Files that need to be changed\n"
+            "3. Implementation steps\n"
+            "4. Additional considerations\n\n"
+            "Format the output in markdown with clear sections and subsections.\n"
+        )
+
+        user_prompt = (
+            f"\nCurrent Overview:\n{self._migration_context['overview']}\n\n"
+            f"MongoDB Schema:\n{schema}\n\n"
+            f"Updated Files:\n{files_to_change}\n"
+        )
+
+        messages: list[ChatCompletionMessageParam] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        strategy = self.llm_client.generate_completion(messages)
+        self._migration_context["strategy"] = strategy
+        return strategy
+
+    def generate_implementation_steps(self) -> str:
+        """Generate implementation steps section.
+
+        Returns:
+            Implementation steps as a string
+        """
+        system_prompt = (
+            "You are a Java Spring to Spring Boot + MongoDB migration expert.\n"
+            "Based on the migration strategy, provide detailed implementation steps.\n\n"
+            "Include:\n"
+            "1. Environment setup\n"
+            "2. Code changes\n"
+            "3. Testing strategy\n"
+            "4. Deployment considerations\n\n"
+            "Format the output in markdown with numbered steps and clear subsections.\n"
+        )
+
+        user_prompt = f"\nMigration Strategy:\n{self._migration_context['strategy']}\n"
+
+        messages: list[ChatCompletionMessageParam] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        steps = self.llm_client.generate_completion(messages)
+        self._migration_context["implementation_steps"] = steps
+        return steps
+
+    def generate_additional_considerations(self) -> str:
+        """Generate additional considerations section.
+
+        Returns:
+            Additional considerations as a string
+        """
+        system_prompt = (
+            "You are a Java Spring to Spring Boot + MongoDB migration expert.\n"
+            "Based on the migration strategy and implementation steps,\n"
+            "provide additional considerations for the migration.\n\n"
+            "Include:\n"
+            "1. Performance optimization\n"
+            "2. Data migration strategy\n"
+            "3. Transaction support\n"
+            "4. Testing strategy\n"
+            "5. Required dependencies\n\n"
+            "Format the output in markdown with clear sections and bullet points.\n"
+        )
+
+        user_prompt = (
+            f"\nMigration Strategy:\n{self._migration_context['strategy']}\n\n"
+            f"Implementation Steps:\n{self._migration_context['implementation_steps']}\n"
+        )
+
+        messages: list[ChatCompletionMessageParam] = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        considerations = self.llm_client.generate_completion(messages)
+        self._migration_context["additional_considerations"] = considerations
+        return considerations
+
+    def get_migration_context(self) -> dict[str, str]:
+        """Get the complete migration context.
+
+        Returns:
+            Dictionary containing all sections of the migration plan
+        """
+        return self._migration_context

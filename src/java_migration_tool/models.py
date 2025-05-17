@@ -42,6 +42,7 @@ class Repository(BaseModel):
     entity_type: str
     file: str
     annotations: list[str] = []
+    methods: list[Method] = []
 
 
 class DatabaseConfig(BaseModel):
@@ -51,6 +52,7 @@ class DatabaseConfig(BaseModel):
     url: str
     username: str
     file: str
+    properties: dict[str, str] = {}
 
 
 class CodebaseSummary(BaseModel):
