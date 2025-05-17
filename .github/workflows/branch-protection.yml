@@ -1,0 +1,17 @@
+name: Branch Protection
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  protect:
+    name: Protect Main Branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch protection
+        run: |
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            echo "::warning::Direct pushes to main branch are not allowed. Please use pull requests."
+            exit 1
+          fi

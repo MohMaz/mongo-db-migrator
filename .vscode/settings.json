@@ -1,0 +1,36 @@
+{
+    "python.languageServer": "Pylance",
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true,
+  
+    "python.linting.enabled": true,
+    "python.linting.ruffEnabled": true,
+    "python.linting.ruffArgs": [
+      "--select=E,F,I,UP,B",
+      "--ignore=E501",
+      "--line-length=100"
+    ],
+  
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.useLibraryCodeForTypes": true,
+  
+    "python.analysis.extraPaths": [
+      "./src"
+    ],
+  
+    // Disable Mypy linting if you switched to Pyright only
+    "python.linting.mypyEnabled": false,
+  
+    // You can run Pyright on save as well
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+  
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/.pytest_cache": true,
+      "**/.venv": true
+    }
+  }
+  
