@@ -1,0 +1,9 @@
+# LLM Configuration
+llm:
+  model: ${AZURE_OPENAI_DEPLOYMENT_NAME}
+  temperature: 0.7
+  max_tokens: 4000
+  api_type: azure
+  api_base: ${AZURE_OPENAI_ENDPOINT}
+  api_version: ${AZURE_OPENAI_API_VERSION}
+  api_key: ${AZURE_OPENAI_API_KEY}

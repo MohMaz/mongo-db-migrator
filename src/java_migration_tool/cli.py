@@ -1,49 +1,57 @@
-from datetime import datetime
+import argparse
+import asyncio
+import logging
+from typing import Any
 
-from java_migration_tool.analyzer import StaticAnalyzer
-from java_migration_tool.llm_client import LLMClient
-from java_migration_tool.mongodb_migration import MongoDBMigration
-from java_migration_tool.report import generate_report
+from java_migration_tool.modes import run_agentic_migration, run_sequential_migration
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("migration.log"), logging.StreamHandler()],
+)
+logger = logging.getLogger(__name__)
 
 
-def main(repo_path: str) -> None:
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments.
+
+    Returns:
+        Parsed arguments
+    """
+    parser = argparse.ArgumentParser(description="Java to MongoDB Migration Tool")
+    parser.add_argument(
+        "repo_path",
+        help="Path to the repository to analyze",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["sequential", "agentic"],
+        default="sequential",
+        help="Migration mode to use (default: sequential)",
+    )
+    return parser.parse_args()
+
+
+async def main() -> None:
     """Main entry point for the migration tool.
 
-    Args:
-        repo_path: Path to the repository to analyze
+    Returns:
+        Migration results
     """
-    # Initialize components
-    llm_client = LLMClient()
-    analyzer = StaticAnalyzer()
-    migration = MongoDBMigration(llm_client, repo_path, analyzer)
+    args = parse_args()
 
-    # Generate migration plan sections
-    migration.generate_current_overview()
-    migration.generate_migration_strategy()
-    # migration.generate_implementation_steps()
-    # migration.generate_additional_considerations()
-
-    # Get complete migration context
-    migration_context = migration.get_migration_context()
-
-    # Generate report
-    report = generate_report(
-        codebase_summary=migration.code_summary,
-        migration_context=migration_context,
-    )
-
-    # Save report with timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = f"reports/migration_report_{timestamp}.md"
-    with open(report_path, "w+") as f:
-        f.write(report)
+    if args.mode == "sequential":
+        logger.info("Running migration in sequential mode")
+        return run_sequential_migration(args.repo_path)
+    elif args.mode == "agentic":
+        logger.info("Running migration in agentic mode")
+        return await run_agentic_migration(args.repo_path)
+    else:
+        logger.error(f"Invalid mode: {args.mode}. Supported modes are: sequential, agentic")
+        return {}
 
 
 if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) != 2:
-        print("Usage: python -m java_migration_tool.cli <repo_path>")
-        sys.exit(1)
-
-    main(sys.argv[1])
+    asyncio.run(main())

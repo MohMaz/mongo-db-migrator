@@ -63,45 +63,29 @@ class StaticAnalyzer:
 
         return FileInfo(file=file_path, classes=classes)
 
-    def analyze_codebase(self, path: str, verbose: bool = False) -> CodebaseSummary:
+    def analyze_codebase(
+        self, path: str, verbose: bool = False, entity_only: bool = False
+    ) -> CodebaseSummary:
         """Analyze a codebase and return its structure.
 
         Args:
             path: Path to the codebase
             verbose: Whether to print progress information
+            entity_only: If True, only analyze classes with @Entity annotation
 
         Returns:
             CodebaseSummary containing the codebase structure
         """
-        java_files = self.list_java_files(path)
         files = []
 
-        for file_path in java_files:
-            if verbose:
-                print(f"[INFO] Parsing {file_path}")
-
-            file_info = self.extract_class_info(file_path)
-            if file_info.classes:
-                files.append(file_info)
-
-        return CodebaseSummary(project_path=path, files=files)
-
-    def analyze_entities(self, repo_path: str) -> CodebaseSummary:
-        """Analyze a Java codebase and extract entity information.
-
-        Args:
-            repo_path: Path to the repository to analyze
-
-        Returns:
-            CodebaseSummary containing entity analysis
-        """
-        files = []
-
-        for root, _, file_list in os.walk(repo_path):
+        for root, _, file_list in os.walk(path):
             for file in file_list:
                 if file.endswith(".java"):
                     file_path = os.path.join(root, file)
                     try:
+                        if verbose:
+                            print(f"[INFO] Parsing {file_path}")
+
                         with open(file_path) as f:
                             code = f.read()
 
@@ -114,31 +98,64 @@ class StaticAnalyzer:
                         # Extract classes
                         classes = []
                         for _, class_decl in tree.filter(ClassDeclaration):
-                            class_info = self._analyze_class(class_decl, package)  # type: ignore[reportAttributeAccessIssue]
-                            if class_info:
-                                classes.append(
-                                    Class(
-                                        name=class_info["name"],
-                                        annotations=class_info["annotations"],
-                                        methods=[
-                                            Method(
-                                                name=m["name"],
-                                                annotations=m["annotations"],
-                                                return_type=m["return_type"],
-                                            )
-                                            for m in class_info["methods"]
-                                        ],
+                            if entity_only:
+                                # For entity analysis, use detailed class analysis
+                                class_info = self._analyze_class(class_decl, package)  # type: ignore[reportAttributeAccessIssue]
+                                if class_info:
+                                    classes.append(
+                                        Class(
+                                            name=class_info["name"],
+                                            annotations=class_info["annotations"],
+                                            methods=[
+                                                Method(
+                                                    name=m["name"],
+                                                    annotations=m["annotations"],
+                                                    return_type=m["return_type"],
+                                                )
+                                                for m in class_info["methods"]
+                                            ],
+                                        )
                                     )
+                            else:
+                                # For general analysis, use simpler class extraction
+                                methods = []
+                                for method in class_decl.methods:  # type: ignore[reportAttributeAccessIssue]
+                                    method_info = Method(
+                                        name=method.name,  # type: ignore[reportAttributeAccessIssue]
+                                        annotations=[ann.name for ann in method.annotations],  # type: ignore[reportAttributeAccessIssue]
+                                        return_type=(
+                                            str(method.return_type) if method.return_type else None
+                                        ),  # type: ignore[reportAttributeAccessIssue]
+                                    )
+                                    methods.append(method_info)
+
+                                class_info = Class(
+                                    name=class_decl.name,  # type: ignore[reportAttributeAccessIssue]
+                                    annotations=[ann.name for ann in class_decl.annotations],  # type: ignore[reportAttributeAccessIssue]
+                                    methods=methods,
                                 )
+                                classes.append(class_info)
 
                         if classes:
                             files.append(FileInfo(file=file_path, classes=classes))
 
                     except Exception as e:
-                        print(f"Error analyzing {file_path}: {e}")
+                        if verbose:
+                            print(f"Error analyzing {file_path}: {e}")
                         continue
 
-        return CodebaseSummary(project_path=repo_path, files=files)
+        return CodebaseSummary(project_path=path, files=files)
+
+    def analyze_entities(self, repo_path: str) -> CodebaseSummary:
+        """Analyze a Java codebase and extract entity information.
+
+        Args:
+            repo_path: Path to the repository to analyze
+
+        Returns:
+            CodebaseSummary containing entity analysis
+        """
+        return self.analyze_codebase(repo_path, entity_only=True)
 
     def _analyze_class(self, class_decl: ClassDeclaration, package: str) -> dict[str, Any] | None:
         """Analyze a Java class declaration.

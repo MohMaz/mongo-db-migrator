@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, TypedDict
+from typing import TypedDict
 
 from openai.types.chat import ChatCompletionMessageParam
 
@@ -12,7 +12,7 @@ class MethodInfo(TypedDict):
     """Type definition for method information."""
 
     name: str
-    annotations: List[str]
+    annotations: list[str]
     return_type: str | None
 
 
@@ -22,9 +22,9 @@ class EntityData(TypedDict):
     name: str
     package: str
     description: str
-    annotations: List[str]
-    methods: List[MethodInfo]
-    imports: List[str]
+    annotations: list[str]
+    methods: list[MethodInfo]
+    imports: list[str]
     file: str
 
 
@@ -39,9 +39,9 @@ class RelationshipInfo(TypedDict):
 class CuratedContext(TypedDict):
     """Type definition for curated context."""
 
-    entities: List[EntityData]
-    relationships: List[RelationshipInfo]
-    annotations: Dict[str, List[str]]
+    entities: list[EntityData]
+    relationships: list[RelationshipInfo]
+    annotations: dict[str, list[str]]
 
 
 class MongoDBMigration:
@@ -129,7 +129,7 @@ class MongoDBMigration:
 
         # Analyze relationships based on annotations and imports
         for entity in curated_context["entities"]:
-            relationships: List[RelationshipInfo] = []
+            relationships: list[RelationshipInfo] = []
             for annotation in entity["annotations"]:
                 if annotation in ["@OneToMany", "@ManyToOne", "@OneToOne", "@ManyToMany"]:
                     # Look for related entity in imports

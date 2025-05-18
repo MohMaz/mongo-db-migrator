@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal
 
 
 class CodeProcessing:
@@ -22,7 +22,7 @@ class CodeProcessing:
         return code
 
     @staticmethod
-    def extract_imports(code: str) -> List[str]:
+    def extract_imports(code: str) -> list[str]:
         """Extract import statements from Java code.
 
         Args:
@@ -61,7 +61,7 @@ class CodeProcessing:
         return match.group(1) if match else None
 
     @staticmethod
-    def extract_methods(code: str) -> List[Dict[str, Any]]:
+    def extract_methods(code: str) -> list[dict[str, Any]]:
         """Extract method declarations from Java code.
 
         Args:
@@ -101,7 +101,7 @@ class CodeProcessing:
         return []
 
     @staticmethod
-    def extract_entity_info(code: str, file_path: str) -> Optional[Tuple[str, str, List[str]]]:
+    def extract_entity_info(code: str, file_path: str) -> tuple[str, str, list[str]] | None:
         """Extract entity information from Java code.
 
         Args:
@@ -171,7 +171,7 @@ class CodeProcessing:
     @staticmethod
     def extract_database_config(
         code: str, file_path: str
-    ) -> Optional[Tuple[Literal["mysql", "postgresql", "h2", "hikari"], Dict[str, Any]]]:
+    ) -> tuple[Literal["mysql", "postgresql", "h2", "hikari"], dict[str, Any]] | None:
         """Extract database configuration from Java code.
 
         Args:

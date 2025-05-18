@@ -5,11 +5,26 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Java Migration Tool",
+            "name": "Debug Sequential Mode",
             "type": "debugpy",
             "request": "launch",
             "module": "java_migration_tool.cli",
-            "args": [ "cloned_repos/spring-petclinic"]
+            "args": ["cloned_repos/spring-petclinic", "--mode", "sequential"],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Debug Agentic Mode",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "java_migration_tool.cli",
+            "args": ["cloned_repos/jboss-eap-quickstarts/kitchensink/", "--mode", "agentic"],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
