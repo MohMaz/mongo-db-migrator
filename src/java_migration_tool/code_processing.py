@@ -1,4 +1,5 @@
 import re
+from typing import Any, Literal
 
 
 class CodeProcessing:
@@ -60,7 +61,7 @@ class CodeProcessing:
         return match.group(1) if match else None
 
     @staticmethod
-    def extract_methods(code: str) -> list[dict]:
+    def extract_methods(code: str) -> list[dict[str, Any]]:
         """Extract method declarations from Java code.
 
         Args:
@@ -168,7 +169,9 @@ class CodeProcessing:
         return class_name, entity_type, methods
 
     @staticmethod
-    def extract_database_config(code: str, file_path: str) -> tuple[str, dict] | None:
+    def extract_database_config(
+        code: str, file_path: str
+    ) -> tuple[Literal["mysql", "postgresql", "h2", "hikari"], dict[str, Any]] | None:
         """Extract database configuration from Java code.
 
         Args:
@@ -176,7 +179,7 @@ class CodeProcessing:
             file_path: Path to the Java file
 
         Returns:
-            Tuple of (db_type, properties) or None if no config found
+            Tuple of (database_type, config) or None if no config found
         """
         # Look for common database configuration patterns
         db_type = None

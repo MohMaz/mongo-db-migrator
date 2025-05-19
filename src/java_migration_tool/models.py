@@ -42,6 +42,7 @@ class Repository(BaseModel):
     entity_type: str
     file: str
     annotations: list[str] = []
+    methods: list[Method] = []
 
 
 class DatabaseConfig(BaseModel):
@@ -51,6 +52,7 @@ class DatabaseConfig(BaseModel):
     url: str
     username: str
     file: str
+    properties: dict[str, str] = {}
 
 
 class CodebaseSummary(BaseModel):
@@ -241,3 +243,23 @@ class CodebaseSummary(BaseModel):
             if config.type == db_type:
                 return config
         return None
+
+
+class MongoDBConfig(BaseModel):
+    """MongoDB configuration parameters."""
+
+    image: str = "mongo:latest"
+    container_name: str = "mongodb"
+    port: int = 27017
+    username: str = "admin"
+    password: str = "password"
+    timeout: int = 60
+    work_dir: str = "/Users/mohammadmazraeh/Projects/mongo-db-migrator"
+    network_name: str = "migration-network"
+    stop_container: bool = True
+    auto_remove: bool = True
+
+    @property
+    def connection_url(self) -> str:
+        """Get MongoDB connection URL."""
+        return f"mongodb://{self.username}:{self.password}@localhost:{self.port}"

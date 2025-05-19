@@ -1,68 +1,90 @@
-import json
+import argparse
+import asyncio
+import logging
+from datetime import datetime
+from typing import Any
 
-from java_migration_tool.analyzer import Analyzer, StaticAnalyzer
-from java_migration_tool.llm_client import LLMClient
-from java_migration_tool.mongodb_migration import MongoDBMigration
-from java_migration_tool.report import generate_report
+from java_migration_tool.agentic.main import run_agentic_migration
+
+from java_migration_tool.sequential.sequential import run_sequential_migration
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("migration.log"), logging.StreamHandler()],
+)
+logger = logging.getLogger(__name__)
 
 
-def get_analyzer(analyzer_type: str, model: str | None = None) -> Analyzer:
-    """Get the appropriate analyzer based on type.
-
-    Args:
-        analyzer_type: Type of analyzer to use ('static' or 'code2prompt')
-        model: Optional model name for code2prompt analyzer
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments.
 
     Returns:
-        An instance of the requested analyzer
+        Parsed arguments
     """
-    if analyzer_type == "static":
-        return StaticAnalyzer()
-    else:
-        raise ValueError(f"Unknown analyzer type: {analyzer_type}")
+    parser = argparse.ArgumentParser(description="Java to MongoDB Migration Tool")
+    parser.add_argument(
+        "--local-repo-path",
+        help="Path to the repository to analyze",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["sequential", "agentic"],
+        default="agentic",
+        help="Migration mode to use (default: sequential)",
+    )
+    parser.add_argument(
+        "--report-path",
+        help="Path where to save the report. If not provided, a timestamp-based path will be used.",
+    )
+    return parser.parse_args()
 
 
-def main(repo_path: str) -> None:
-    """Main entry point for the migration tool.
+def get_report_path(mode: str, provided_path: str | None = None) -> str:
+    """Generate a report path if not provided.
 
     Args:
-        repo_path: Path to the repository to analyze
+        mode: Migration mode ("sequential" or "agentic")
+        provided_path: User-provided report path, if any
+
+    Returns:
+        Path where to save the report
     """
-    # Initialize components
-    analyzer = StaticAnalyzer()
-    llm_client = LLMClient()
-    migration = MongoDBMigration(llm_client)
+    if provided_path:
+        return provided_path
 
-    # Analyze codebase
-    code_summary = analyzer.analyze_codebase(repo_path)
+    # Generate timestamp-based path
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if mode == "sequential":
+        return f"reports/migration_report_{timestamp}.md"
+    else:
+        return f"migration-output/migration_report_{timestamp}.md"
 
-    # Save code summary
-    with open("code_base_summary.json", "w") as f:
-        json.dump(code_summary.to_json(), f, indent=2)
 
-    # Generate migration plan
-    migration_plan = migration.suggest_migration_plan(code_summary)
+async def main() -> dict[str, Any]:
+    """Main entry point for the migration tool.
 
-    # Generate MongoDB schema
-    schema = migration.generate_mongodb_schema(code_summary)
+    Returns:
+        Migration results
+    """
+    args = parse_args()
 
-    # Generate report
-    report = generate_report(
-        codebase_summary=code_summary,
-        migration_plan=migration_plan,
-        schema=schema,
-    )
+    # Generate report path if not provided
+    report_path = get_report_path(args.mode, args.report_path)
 
-    # Save report
-    with open("migration_report.md", "w") as f:
-        f.write(report)
+    if args.mode == "sequential":
+        logger.info("Running migration in sequential mode")
+        run_sequential_migration(args.local_repo_path, report_path)
+        return {}
+    elif args.mode == "agentic":
+        logger.info("Running migration in agentic mode")
+        await run_agentic_migration(args.local_repo_path, report_path)
+        return {}
+    else:
+        logger.error(f"Invalid mode: {args.mode}. Supported modes are: sequential, agentic")
+        return {}
 
 
 if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) != 2:
-        print("Usage: python -m java_migration_tool.cli <repo_path>")
-        sys.exit(1)
-
-    main(sys.argv[1])
+    asyncio.run(main())

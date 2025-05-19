@@ -1,7 +1,8 @@
 import json
-import os
+from pathlib import Path
 from typing import cast
 
+import yaml
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AzureOpenAI
 from openai.types.chat import (
@@ -10,6 +11,7 @@ from openai.types.chat import (
 )
 
 from java_migration_tool.code_processing import CodeProcessing
+from java_migration_tool.config import load_llm_config, resolve_env_vars
 
 
 class LLMClient:
@@ -17,22 +19,14 @@ class LLMClient:
 
     def __init__(
         self,
-        endpoint: str | None = None,
-        deployment: str | None = None,
-        api_version: str = "2025-01-01-preview",
+        config_path: str = "config.yaml",
     ):
         """Initialize the LLM client.
 
         Args:
-            endpoint: Azure OpenAI endpoint URL
-            deployment: Azure OpenAI deployment name
-            api_version: Azure OpenAI API version
+            config_path: Path to the config file
         """
-        self.endpoint = endpoint or os.getenv(
-            "ENDPOINT_URL", "https://devautogen.openai.azure.com/"
-        )
-        self.deployment = deployment or os.getenv("DEPLOYMENT_NAME", "o3-mini")
-        self.api_version = api_version
+        llm_config = load_llm_config(config_path=Path(config_path))
 
         # Initialize Azure OpenAI client with Entra ID authentication
         token_provider = get_bearer_token_provider(
@@ -40,10 +34,11 @@ class LLMClient:
         )
 
         self.client = AzureOpenAI(
-            azure_endpoint=self.endpoint,
+            azure_endpoint=llm_config["api_base"],
             azure_ad_token_provider=token_provider,
-            api_version=self.api_version,
+            api_version=llm_config["api_version"],
         )
+        self.deployment = llm_config["model"]
 
     def generate_completion(
         self,

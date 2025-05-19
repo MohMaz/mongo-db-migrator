@@ -1,0 +1,37 @@
+services:
+
+  # MongoDB database
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_server
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=rootpassword
+      - MONGO_INITDB_DATABASE=migrationdb
+    ports:
+      - "27017:27017"
+    networks:
+      - migration-network
+
+  # Service for running the migration tool
+  migration-tool:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.agent
+    volumes:
+      - ./src:/app/java_migration_tool
+      - ./migration-output:/app/migration-output
+      - .:/mongo-db-migrator
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+    networks:
+      - migration-network
+    command: sh
+
+networks:
+  migration-network:
+    name: migration-network
+    driver: bridge

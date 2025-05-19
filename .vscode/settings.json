@@ -16,7 +16,8 @@
     "python.analysis.useLibraryCodeForTypes": true,
   
     "python.analysis.extraPaths": [
-      "./src"
+      "./src",
+      "./src/java_migration_tool"
     ],
   
     // Disable Mypy linting if you switched to Pyright only
@@ -24,7 +25,7 @@
   
     // You can run Pyright on save as well
     "editor.codeActionsOnSave": {
-      "source.organizeImports": true
+      "source.organizeImports": "explicit"
     },
   
     "files.exclude": {
