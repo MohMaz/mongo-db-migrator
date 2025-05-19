@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "java_migration_tool.cli",
-            "args": ["cloned_repos/spring-petclinic", "--mode", "sequential"],
+            "args": ["--local-repo-path", "cloned_repos/jboss-eap-quickstarts/kitchensink/", "--mode", "sequential", "--report-path", "reports/migration_report_sequential.md"],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             },
@@ -20,7 +20,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "java_migration_tool.cli",
-            "args": ["cloned_repos/jboss-eap-quickstarts/kitchensink/", "--mode", "agentic"],
+            "args": ["--local-repo-path", "cloned_repos/jboss-eap-quickstarts/kitchensink/", "--mode", "agentic", "--report-path", "reports/migration_report_agentic.md"],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
             },

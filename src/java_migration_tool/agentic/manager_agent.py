@@ -41,7 +41,7 @@ class ManagerAgent(GroupChatManager):
         groupchat = GroupChat(
             agents=agents,
             messages=[],
-            max_round=20,
+            max_round=15,
             admin_name="Manager",
             select_speaker_message_template=self.select_speaker_message_template(),
         )

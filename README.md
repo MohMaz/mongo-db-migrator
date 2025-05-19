@@ -26,6 +26,9 @@ A CLI tool that uses LLMs to help migrate legacy Java JBoss applications to Spri
 - Generate LLM-based migration plan to Spring Boot 3.x + MongoDB
 - Schema validation for proposed schema against actual mongodb server
 - Comprehensive migration reports and trajectory
+- Sample outputs:
+  - [Kitchensink Report](reports/kitchensink_report_agentic.md) and [Kitchensink Report Trajectory](reports/kitchensink_report_agentic_trajectory.txt) ( [Original Repo](https://github.com/jboss-developer/jboss-eap-quickstarts/tree/8.0.x/kitchensink) )
+  - [Spring Petclinic Report](spring-petclinic_report_agentic.md) and [Spring Petclinic Report Trajectory](reports/spring-petclinic_report_agentic_trajectory.txt) ( [Original Repo](https://github.com/spring-projects/spring-petclinic) )
 
 ## Usage
 
@@ -43,10 +46,11 @@ docker compose run --rm -it migration-tool --local-repo-path "cloned_repos/jboss
 ### Local setup
 
 ```bash
+# Install uv
 pip install uv
-uv sync --all-extras
-docker compose up -d
-poe run --local-repo-path "cloned_repos/jboss-eap-quickstarts/kitchensink/" --report-path "migration_report.md"
+
+# Install project dependencies with Python 3.12
+uv sync --python 3.12 --all-extras
 ```
 
 ## Migration Modes
@@ -202,8 +206,10 @@ sequenceDiagram
 
 - [x] Add ability to execute the mongo DB code schema and provide feedback
 - [ ] Add test executor agent
+- [ ] Add Nested Flow for Schema Generator/Schema Validator so they can independently iterate on the schema design
 - [ ] Add ability to update Java files (code, tests), run tests and provide feedback
 - [ ] Move Code Analyzer service as an MCP server to demonstrate the concept
+- [ ] Improve prompts to improve quality of the report
 
 ### P2
 
