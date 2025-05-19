@@ -28,7 +28,7 @@ A CLI tool that uses LLMs to help migrate legacy Java JBoss applications to Spri
 - Comprehensive migration reports and trajectory
 - Sample outputs:
   - [Kitchensink Report](reports/kitchensink_report_agentic.md) and [Kitchensink Report Trajectory](reports/kitchensink_report_agentic_trajectory.txt) ( [Original Repo](https://github.com/jboss-developer/jboss-eap-quickstarts/tree/8.0.x/kitchensink) )
-  - [Spring Petclinic Report](spring-petclinic_report_agentic.md) and [Spring Petclinic Report Trajectory](reports/spring-petclinic_report_agentic_trajectory.txt) ( [Original Repo](https://github.com/spring-projects/spring-petclinic) )
+  - [Spring Petclinic Report](reports/spring-petclinic_report_agentic.md) and [Spring Petclinic Report Trajectory](reports/spring-petclinic_report_agentic_trajectory.txt) ( [Original Repo](https://github.com/spring-projects/spring-petclinic) )
 
 ## Usage
 
