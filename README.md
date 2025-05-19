@@ -219,3 +219,5 @@ sequenceDiagram
 - [ ] Use code2prompt to curate prompt
 - [ ] Clone repo if it does not exist
 - [ ] Enable code2prompt as MCP Server
+- [ ] Fix CI/CD pipeline errors
+- [ ] Add references to documentations for model to improve quailty (e.g. MongoDB docs/Spring docs for the specific version)

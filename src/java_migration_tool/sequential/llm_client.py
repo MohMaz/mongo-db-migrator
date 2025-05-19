@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 from typing import cast
 
-import yaml
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import AzureOpenAI
 from openai.types.chat import (
@@ -11,7 +10,7 @@ from openai.types.chat import (
 )
 
 from java_migration_tool.code_processing import CodeProcessing
-from java_migration_tool.config import load_llm_config, resolve_env_vars
+from java_migration_tool.config import load_llm_config
 
 
 class LLMClient:

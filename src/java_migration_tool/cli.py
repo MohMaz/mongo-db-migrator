@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Any
 
 from java_migration_tool.agentic.main import run_agentic_migration
-
 from java_migration_tool.sequential.sequential import run_sequential_migration
 
 # Setup logging
