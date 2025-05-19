@@ -5,7 +5,7 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from java_migration_tool.analyzer import StaticAnalyzer
 from java_migration_tool.code_processing import CodeProcessing
-from java_migration_tool.llm_client import LLMClient
+from java_migration_tool.sequential.llm_client import LLMClient
 
 
 class MethodInfo(TypedDict):

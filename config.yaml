@@ -7,3 +7,19 @@ llm:
   api_base: ${AZURE_OPENAI_ENDPOINT}
   api_version: ${AZURE_OPENAI_API_VERSION}
   api_key: ${AZURE_OPENAI_API_KEY}
+
+# MongoDB Configuration
+mongodb:
+  image: mongo:latest
+  container_name: mongodb
+  service_name: mongodb
+  database: migrationdb
+  host: mongodb_server
+  port: 27017
+  username: root
+  password: rootpassword
+  timeout: 60
+  work_dir: ${WORKSPACE_ROOT:-/Users/mohammadmazraeh/Projects/mongo-db-migrator}
+  network_name: migration-network
+  stop_container: false
+  auto_remove: false

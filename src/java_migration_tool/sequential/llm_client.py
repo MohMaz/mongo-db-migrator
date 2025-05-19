@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 from typing import cast
 
 import yaml
@@ -11,33 +11,7 @@ from openai.types.chat import (
 )
 
 from java_migration_tool.code_processing import CodeProcessing
-
-
-def resolve_env_vars(value: str) -> str:
-    """Resolve environment variables in a string.
-
-    Args:
-        value: String that may contain environment variables
-
-    Returns:
-        Resolved string with environment variables replaced
-    """
-    if not isinstance(value, str):
-        return value
-
-    # Handle default values in format ${VAR:-default}
-    if "${" in value and ":-" in value:
-        var_name, default = value.split(":-")
-        var_name = var_name.strip("${")
-        default = default.strip("}")
-        return os.environ.get(var_name, default)
-
-    # Handle simple ${VAR} format
-    if "${" in value:
-        var_name = value.strip("${}")
-        return os.environ.get(var_name, value)
-
-    return value
+from java_migration_tool.config import load_llm_config, resolve_env_vars
 
 
 class LLMClient:
@@ -52,16 +26,7 @@ class LLMClient:
         Args:
             config_path: Path to the config file
         """
-        # Load config
-        with open(config_path) as f:
-            config = yaml.safe_load(f)["llm"]
-
-        # Resolve environment variables
-        resolved_config = {
-            "model": resolve_env_vars(config["model"]),
-            "api_base": resolve_env_vars(config["api_base"]),
-            "api_version": resolve_env_vars(config["api_version"]),
-        }
+        llm_config = load_llm_config(config_path=Path(config_path))
 
         # Initialize Azure OpenAI client with Entra ID authentication
         token_provider = get_bearer_token_provider(
@@ -69,11 +34,11 @@ class LLMClient:
         )
 
         self.client = AzureOpenAI(
-            azure_endpoint=resolved_config["api_base"],
+            azure_endpoint=llm_config["api_base"],
             azure_ad_token_provider=token_provider,
-            api_version=resolved_config["api_version"],
+            api_version=llm_config["api_version"],
         )
-        self.deployment = resolved_config["model"]
+        self.deployment = llm_config["model"]
 
     def generate_completion(
         self,

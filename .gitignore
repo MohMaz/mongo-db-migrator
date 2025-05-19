@@ -198,3 +198,4 @@ cloned_repos
 reports
 migration-output
 code_base_summary.json
+tmp_code*

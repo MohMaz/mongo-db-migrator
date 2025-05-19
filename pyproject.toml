@@ -30,7 +30,9 @@ dev = [
     "black",
     "ruff",
     "pyright",
-    "types-docker"
+    "types-docker",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0"
 ]
 
 [project.scripts]
@@ -47,6 +49,7 @@ typecheck = "pyright"
 check = { shell = "poe format && poe lint && poe typecheck" }
 check-fix = { shell = "poe format && poe lint-fix" }
 run = "python -m java_migration_tool.cli --mode agentic cloned_repos/spring-petclinic/"
+test = "pytest tests/ -v"
 
 [tool.black]
 line-length = 100

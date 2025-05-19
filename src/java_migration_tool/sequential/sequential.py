@@ -1,17 +1,22 @@
-import datetime
+import os
+from pathlib import Path
 
 from java_migration_tool.analyzer import StaticAnalyzer
-from java_migration_tool.llm_client import LLMClient
-from java_migration_tool.mongodb_migration import MongoDBMigration
-from java_migration_tool.report import generate_report
+from java_migration_tool.sequential.llm_client import LLMClient
+from java_migration_tool.sequential.mongodb_migration import MongoDBMigration
+from java_migration_tool.sequential.report import generate_report
 
 
-def run_sequential_migration(repo_path: str) -> None:
+def run_sequential_migration(repo_path: str, report_path: str) -> None:
     """Main entry point for the migration tool.
 
     Args:
         repo_path: Path to the repository to analyze
+        report_path: Path where to save the report
     """
+    os.makedirs("logs", exist_ok=True)
+    os.makedirs("reports", exist_ok=True)
+
     # Initialize components
     llm_client = LLMClient()
     analyzer = StaticAnalyzer()
@@ -32,8 +37,9 @@ def run_sequential_migration(repo_path: str) -> None:
         migration_context=migration_context,
     )
 
-    # Save report with timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = f"reports/migration_report_{timestamp}.md"
+    # Ensure parent directory exists
+    Path(report_path).parent.mkdir(parents=True, exist_ok=True)
+
+    # Save report
     with open(report_path, "w+") as f:
         f.write(report)

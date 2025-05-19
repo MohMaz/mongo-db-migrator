@@ -19,7 +19,28 @@ Migration plan built by LLM for pet clinic repo: https://gist.github.com/mutukri
 
 A CLI tool that uses LLMs to help migrate legacy Java Spring applications to Spring Boot + MongoDB.
 
----
+## Table of Contents
+
+- [Assignment](#assignment)
+- [Java Migration Tool](#java-migration-tool)
+  - [Table of Contents](#table-of-contents)
+  - [🚀 Features](#-features)
+  - [📦 Setup](#-setup)
+    - [Local Setup](#local-setup)
+    - [Docker Setup](#docker-setup)
+  - [Usage](#usage)
+    - [CLI Usage](#cli-usage)
+    - [Docker Usage](#docker-usage)
+  - [Migration Modes](#migration-modes)
+    - [Sequential Mode](#sequential-mode)
+    - [Agentic Mode](#agentic-mode)
+  - [Implementation Details](#implementation-details)
+    - [Migration Flow](#migration-flow)
+    - [Agent Responsibilities](#agent-responsibilities)
+  - [Output Files](#output-files)
+  - [TODO](#todo)
+    - [P1](#p1)
+    - [P2](#p2)
 
 ## 🚀 Features
 
@@ -27,17 +48,23 @@ A CLI tool that uses LLMs to help migrate legacy Java Spring applications to Spr
 - Generate LLM-based migration plan to Spring Boot 3.x + MongoDB
 - Optional MongoDB schema suggestion
 - Markdown or JSON report output
-- Agentic approach with multiple specialized agents
+- Two migration modes: Sequential and Agentic
 - Comprehensive migration reports with implementation details
 
----
-
 ## 📦 Setup
+
+### Local Setup
 
 1. Install Python dependencies using [`uv`](https://github.com/astral-sh/uv):
 
 ```bash
+# Install uv
+pip install uv
+
+# Install project dependencies
 uv pip install -e .[dev]
+
+# Install pre-commit hooks
 pre-commit install
 ```
 
@@ -51,30 +78,74 @@ cargo install code2prompt
 brew install code2prompt
 ```
 
-## Usage
+### Docker Setup
+
+1. Build and start the services:
 
 ```bash
-# Using the static analyzer (default)
-poe run --analyzer static
-
-# Using code2prompt analyzer
-poe run --analyzer code2prompt
-
-# Generate MongoDB schema suggestions
-poe run --schema
-
-# Output in JSON format
-poe run --output json
-
-# Run in agentic mode
-poe run --mode agentic
+docker-compose up --build
 ```
 
-## Implementation Details
+This will:
 
-### Agentic Architecture
+- Start a MongoDB instance
+- Build and run the migration tool
+- Mount necessary volumes for code and output
+- Set up the required network
 
-The tool uses an agentic approach with multiple specialized agents working together:
+## Usage
+
+### CLI Usage
+
+```bash
+# Run the migration tool with default settings (sequential mode)
+poe migrate
+
+# Run with specific mode
+poe migrate --mode sequential
+poe migrate --mode agentic
+
+# Run with schema generation
+poe migrate --schema
+
+# Run with specific repository path
+poe migrate --repo-path /path/to/repo
+
+# Run with specific output directory
+poe migrate --output-dir /path/to/output
+```
+
+### Docker Usage
+
+```bash
+# Run migration tool with default settings
+docker-compose up migration-tool
+
+# Run with specific mode
+docker-compose run --rm migration-tool poe migrate --mode sequential
+
+# Run with schema generation
+docker-compose run --rm migration-tool poe migrate --schema
+```
+
+## Migration Modes
+
+### Sequential Mode
+
+The sequential mode provides a straightforward, step-by-step migration process:
+
+```mermaid
+graph TD
+    A[Start] --> B[Analyze Codebase]
+    B --> C[Generate Migration Plan]
+    C --> D[Design MongoDB Schema]
+    D --> E[Generate Report]
+    E --> F[End]
+```
+
+### Agentic Mode
+
+The agentic mode uses multiple specialized agents working together:
 
 ```mermaid
 graph TD
@@ -90,6 +161,8 @@ graph TD
     E -->|Test Generation| G
     F -->|Report Generation| G
 ```
+
+## Implementation Details
 
 ### Migration Flow
 
@@ -154,7 +227,7 @@ sequenceDiagram
    - Documents migration steps
    - Provides implementation details
 
-### Output Files
+## Output Files
 
 The tool generates two main output files:
 
@@ -167,13 +240,13 @@ The tool generates two main output files:
 
 - [ ] Add ability to execute the mongo DB code schema and provide feedback
 - [ ] Add ability to update Java files (code, tests), run tests and provide feedback
-- [ ] Move Code Analyzer service as an an MCP server to demonstrate the concept
+- [ ] Move Code Analyzer service as an MCP server to demonstrate the concept
 
 ### P2
 
 - [ ] Add human in loop agentic pattern with memory
-- [ ] Provide a mechanism (memoty?) for when the repo is big and it doesn't fix model context
+- [ ] Provide a mechanism (memory) for when the repo is big and it doesn't fit model context
 - [ ] Add UI for human in loop pattern
-- [ ] use code2prompt to curate prompt
+- [ ] Use code2prompt to curate prompt
 - [ ] Clone repo if it does not exist
-- [ ] Enable code2prompt as MCP Server? https://code2prompt.dev/docs/how_to/install/#model-context-protocol-mcp
+- [ ] Enable code2prompt as MCP Server

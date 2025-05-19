@@ -1,29 +1,9 @@
-version: '3.8'
-
 services:
-  # Java validation environment
-  java-validator:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.java
-    volumes:
-      - ./src:/app/src
-      - ./pom.xml:/app/pom.xml
-      - ./migration-output:/app/migration-output
-    environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://migration_user:migration_password@mongodb:27017/migrationdb
-    depends_on:
-      - mongodb
-    networks:
-      - migration-network
 
   # MongoDB database
   mongodb:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.mongodb
-    volumes:
-      - mongodb-data:/data/db
+    image: mongo:latest
+    container_name: mongodb_server
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=rootpassword
@@ -33,26 +13,24 @@ services:
     networks:
       - migration-network
 
-  # Service for running the migration agent
-  migration-agent:
+  # Service for running the migration tool
+  migration-tool:
     build:
       context: .
       dockerfile: docker/Dockerfile.agent
     volumes:
-      - ./src:/app/src
+      - ./src:/app/java_migration_tool
       - ./migration-output:/app/migration-output
       - .:/app/repo
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - REPO_PATH=/app/repo
+    env_file:
+      - .env
     depends_on:
       - mongodb
     networks:
       - migration-network
+    command: poe migrate --mode agentic --repo-path /app/repo --output-dir /app/migration-output
 
 networks:
   migration-network:
+    name: migration-network
     driver: bridge
-
-volumes:
-  mongodb-data: 
