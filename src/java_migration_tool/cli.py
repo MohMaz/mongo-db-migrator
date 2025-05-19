@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from agentic.main import run_agentic_migration
+from java_migration_tool.agentic.main import run_agentic_migration
 
 from java_migration_tool.sequential.sequential import run_sequential_migration
 
@@ -25,13 +25,13 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(description="Java to MongoDB Migration Tool")
     parser.add_argument(
-        "repo_path",
+        "--local-repo-path",
         help="Path to the repository to analyze",
     )
     parser.add_argument(
         "--mode",
         choices=["sequential", "agentic"],
-        default="sequential",
+        default="agentic",
         help="Migration mode to use (default: sequential)",
     )
     parser.add_argument(
@@ -75,11 +75,11 @@ async def main() -> dict[str, Any]:
 
     if args.mode == "sequential":
         logger.info("Running migration in sequential mode")
-        run_sequential_migration(args.repo_path, report_path)
+        run_sequential_migration(args.local_repo_path, report_path)
         return {}
     elif args.mode == "agentic":
         logger.info("Running migration in agentic mode")
-        await run_agentic_migration(args.repo_path, report_path)
+        await run_agentic_migration(args.local_repo_path, report_path)
         return {}
     else:
         logger.error(f"Invalid mode: {args.mode}. Supported modes are: sequential, agentic")

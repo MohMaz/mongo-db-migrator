@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from autogen import ConversableAgent
-from config import load_llm_config
+from java_migration_tool.config import load_llm_config
 
 from java_migration_tool.agentic import ManagerAgent
 from java_migration_tool.agentic.agent_tools import analyze_codebase, validate_schema

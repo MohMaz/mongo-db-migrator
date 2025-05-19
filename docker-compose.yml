@@ -21,14 +21,15 @@ services:
     volumes:
       - ./src:/app/java_migration_tool
       - ./migration-output:/app/migration-output
-      - .:/app/repo
+      - .:/mongo-db-migrator
+      - /var/run/docker.sock:/var/run/docker.sock
     env_file:
       - .env
     depends_on:
       - mongodb
     networks:
       - migration-network
-    command: poe migrate --mode agentic --repo-path /app/repo --output-dir /app/migration-output
+    command: sh
 
 networks:
   migration-network:

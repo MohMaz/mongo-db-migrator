@@ -15,13 +15,12 @@ dependencies = [
     "openai>=1.0.0",
     "javalang>=0.13.0",
     "azure-identity>=1.15.0",
-    "code2prompt-rs>=0.1.0",
     "pydantic>=2.0.0",
     "rich>=13.0.0",
     "pyautogen>=0.2.0",
     "docker>=7.0.0",
     "typing-extensions>=4.9.0",
-
+    "pyyaml"
 ]
 
 [project.optional-dependencies]
@@ -48,7 +47,7 @@ lint-fix = "ruff check . --fix"
 typecheck = "pyright"
 check = { shell = "poe format && poe lint && poe typecheck" }
 check-fix = { shell = "poe format && poe lint-fix" }
-run = "python -m java_migration_tool.cli --mode agentic cloned_repos/spring-petclinic/"
+run = "python -m java_migration_tool.cli"
 test = "pytest tests/ -v"
 
 [tool.black]

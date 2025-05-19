@@ -1,26 +1,31 @@
-FROM python:3.12-slim
+FROM python:3.12.10-slim
 
-# Install git and other utilities
+# Install dependencies including Docker Compose CLI
 RUN apt-get update && \
-    apt-get install -y git curl && \
+    apt-get install -y \
+    git \
+    curl \
+    ca-certificates \
+    gnupg \
+    lsb-release && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
+    > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y \
+    docker-ce-cli \
+    docker-compose-plugin && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set up work directory
-WORKDIR /app
+WORKDIR /mongo-db-migrator
 
-# Install uv
-RUN pip install uv
+# Install Python tools
+RUN pip install uv poethepoet
 
-# Copy project files
-COPY pyproject.toml ./
-COPY src/java_migration_tool /app/java_migration_tool
+# Copy project files and install dependencies
+COPY . .
 
-# Install dependencies
-RUN uv pip install -e .[dev]
+RUN uv sync --all-extras
 
-# Copy the agent implementation
-COPY agent.py .
-
-# Default command
-CMD ["poe", "migrate"] 
+ENTRYPOINT ["poe", "run"]

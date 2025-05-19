@@ -1,4 +1,4 @@
-from agentic.manager_agent import ManagerAgent
+from java_migration_tool.agentic.manager_agent import ManagerAgent
 
 __all__ = [
     "ManagerAgent",
